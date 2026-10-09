@@ -3,8 +3,9 @@ import core from '../../lib/records-core.cjs';
 async function verifiedInstructor(req){
  const cookie=req.headers.get('cookie')||'';
  const match=cookie.match(/(?:^|;\s*)nf_jwt=([^;]+)/);
- if(!match)return null;
- const token=decodeURIComponent(match[1]);
+ const bearer=req.headers.get('authorization');
+ const token=bearer?.startsWith('Bearer ')?bearer.slice(7):match?decodeURIComponent(match[1]):null;
+ if(!token)return null;
  const endpoint=new URL('/.netlify/identity/user',process.env.URL);
  const response=await fetch(endpoint,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
  if(!response.ok)return null;
