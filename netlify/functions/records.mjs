@@ -5,9 +5,9 @@ async function verifiedInstructor(req){
  const cookie=req.headers.get('cookie')||'';
  const match=cookie.match(/(?:^|;\s*)nf_jwt=([^;]+)/);
  const bearer=req.headers.get('authorization');
- const token=bearer?.startsWith('Bearer ')?bearer.slice(7):match?decodeURIComponent(match[1]):null;
- if(!token)return null;
  const identity=getIdentityConfig();
+ const token=identity?.token||(bearer?.startsWith('Bearer ')?bearer.slice(7):match?decodeURIComponent(match[1]):null);
+ if(!token)return null;
  if(!identity?.url)return null;
  const endpoint=identity.url.replace(/\/$/,'')+'/user';
  const response=await fetch(endpoint,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
