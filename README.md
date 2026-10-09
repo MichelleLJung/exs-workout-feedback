@@ -61,3 +61,8 @@ After loading online instructor records, select **Refresh participant feedback**
 `npm run check` validates grading/schedule behavior, protected record persistence, privacy, consent, closed sessions and concurrent duplicate submissions. `npm run build` bundles instructor authentication and copies the public form assets. A populated five-page report was rendered and visually reviewed with WeasyPrint; browser Save as PDF pagination may differ.
 
 This remains a demo-only preview. Real participant collection, automated email delivery and the public launch are unfinished. No participant messages are sent.
+
+
+## Short participant evaluation and feedback inbox
+
+The hosted participant form now asks only three whole-workout questions and one optional comment. It does not require participants to identify individual students. This supersedes the earlier full-team individual participant form; earlier submissions remain readable. Instructor grading remains individual and unchanged. Loading online records also refreshes shared feedback and opens Participant feedback, which lists received evaluations across both courses. Existing edited wording and report selections are retained. Workout schedule includes named check-in rosters. Public check-in/evaluation pages no longer repeat creator/licensing blocks; the instructor home links to the licensing page.

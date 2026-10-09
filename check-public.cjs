@@ -9,6 +9,10 @@ const evaluation={session:checkin.session,token,permission:true,individual:detai
 assert.equal((await call('evaluation',{...evaluation,individual:[null,null]})).status,400);assert.equal((await call('evaluation',{...evaluation,individual:evaluation.individual.slice(1)})).status,400);
 const submissions=await Promise.all([call('evaluation',evaluation),call('evaluation',evaluation)]);assert.deepEqual(submissions.map(r=>r.status).sort(),[200,409]);
 const inbox=await(await call('inbox',undefined,'',{isInstructor:true})).json();assert.equal(inbox.checkins.length,1);assert.equal(inbox.feedback.length,details.session.instructors.length);assert.equal(inbox.teamFeedback.length,1);assert.equal(inbox.feedback[0].include.well,false);assert(!inbox.feedback[0].id.includes(':'));assert(!Object.hasOwn(inbox.checkins[0],'token'));
+const simplePath=(await(await call('checkin',{...checkin,email:'simple@example.com'})).json()).evaluationPath;
+const simpleToken=new URL(simplePath,'https://site.test').searchParams.get('token');
+assert.equal((await call('evaluation',{session:checkin.session,token:simpleToken,format:'workout-only',individual:[],permission:false,teamRatings:[4,null,5],teamComment:'Fictional short comment'})).status,200);
+const updated=await(await call('inbox',undefined,'',{isInstructor:true})).json();assert.equal(updated.teamFeedback.length,2);assert.equal(updated.feedback.length,details.session.instructors.length);assert.equal(updated.teamFeedback[1].permission,false);assert.deepEqual(updated.teamFeedback[1].include,{});
 const noConsent=await(await call('checkin',{...checkin,email:'other@example.com',consent:false})).json();assert.equal(noConsent.evaluationPath,null);
 console.log('Passed: public metadata privacy, protected inbox, origin/schema checks, demo-only addresses, closed sessions, concurrent duplicate prevention, consent, full-team evaluation, N/A ratings, single submission and default comment exclusion.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -36,3 +36,7 @@ console.log('Passed: one evaluation covers all instructors, N/A handling, team c
 elements['#course'].value='EXS215';elements['#student'].value='DemoA';
 check(`assert(addCheckin(1,'name@example.com',true,''));assert.equal(addCheckin(1,'name@example.com',false,'Sample Guest'),'');assert.equal(state.checkins.at(-1).name,'Sample Guest');assert.equal(state.checkins.at(-1).consent,false);assert.equal(state.checkins.at(-1).test,true);checkinSelection.EXS215=1;assert(checkinView().includes('value="1" selected'));assert(checkinView().includes('name="name"'));setSessionStatus(1,'Completed');assert(!checkinOptions().some(o=>o.i===1));assert(!checkinView().includes('value="1"'));`);
 console.log('Passed: check-in names, consent, test marking, retained team selection and exclusion of closed workouts.');
+
+elements['#course'].value='EXS215';elements['#student'].value='DemoA';
+check(`const inbox=participantInboxView();assert(inbox.includes('evaluation'));assert(inbox.includes('Good flow'));assert(inbox.includes('Earlier individual feedback'));assert(inbox.includes('data-review-course="EXS215"'));assert(checkinRoster(1).includes('Sample Guest'));assert(!participantInboxView().includes('name@example.com'));`);
+console.log('Passed: feedback inbox shows received comments and earlier individual responses; check-in roster shows participant names separately.');
