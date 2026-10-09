@@ -17,7 +17,7 @@ check(`assert(roleDeferred(1));assert(!roleDeferred(0));tab='roles';render();ass
 elements['#course'].value='EXS217';sync();
 function sync(){check('syncStudents()')}
 elements['#student'].value='DemoE';
-check(`assert.equal(schedule().teams.flat().length,12);assert.equal(schedule().sessions.filter(s=>s.deferred).length,0);assert.equal(state.values[key('shared',0)],undefined);assert.equal(studentParticipation().length,3);assert.equal(schedule().sessions[0].equipment,'Battle ropes / bike');tab='schedule';render();assert($('#content').innerHTML.includes('2026-10-22'));tab='checkin';render();assert($('#content').innerHTML.includes('2026-10-29'));`);
+check(`assert.equal(schedule().teams.flat().length,12);assert.equal(schedule().sessions.filter(s=>s.deferred).length,0);assert.equal(state.values[key('shared',0)],undefined);assert.equal(studentParticipation().length,3);assert.equal(schedule().sessions[0].equipment,'Battle ropes / bike');tab='schedule';render();assert($('#content').innerHTML.includes('Thursday, October 22, 2026'));tab='checkin';render();assert($('#content').innerHTML.includes('Thursday, October 29, 2026'));`);
 check(`for(const c of ['EXS215','EXS217']){for(const [i,t] of courseSchedules[c].teams.entries()){for(const role of ['teach','desk','support'])assert.equal(courseSchedules[c].sessions.filter(s=>s[role]===i).length,1);}}`);
 console.log('Passed: schedule assignments, course/team separation, deferred scoring, active earlier DemoL/DemoM roles, participation, scoring, check-in consent and duplicate/cancellation controls.');
 

@@ -1,2 +1,2 @@
-import {login,logout,getUser,handleAuthCallback} from '@netlify/identity';
-window.workoutIdentity={login,logout,getUser,handleAuthCallback};
+import {login,logout,getUser,handleAuthCallback,acceptInvite} from '@netlify/identity';
+window.workoutIdentity={login,logout,getUser,handleAuthCallback,acceptInvite};

@@ -4,7 +4,9 @@ function teamIndex(){return schedule().teams.findIndex(t=>t.includes(student()))
 function teamLabel(i){return schedule().teams[i].join(' · ')}
 function sessionKey(i){return `${course()}:workout-${i+1}`}
 function sessionStatus(i){return schedule().sessions[i].deferred?'Awaiting alternate opportunity':state.sessions[sessionKey(i)]||'Scheduled'}
-function sessionLabel(i){const s=schedule().sessions[i];return s.deferred?`Date to be determined (previously ${s.originalDate}, ${s.originalTime})`:`${s.date} · ${s.time}`}
+function displayWorkoutDate(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value||''))return value;const [y,m,d]=value.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'America/Phoenix'}).format(new Date(Date.UTC(y,m-1,d,12)))}
+function displayWorkoutTime(value){return String(value||'').replace(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})$/, '$1–$2 AM')+' (Arizona time)'}
+function sessionLabel(i){const s=schedule().sessions[i];return s.deferred?`Date to be determined (previously ${displayWorkoutDate(s.originalDate)}, ${displayWorkoutTime(s.originalTime)})`:`${displayWorkoutDate(s.date)} · ${displayWorkoutTime(s.time)}`}
 function assignment(kind){const field=kind==='shared'||kind==='individual'?'teach':kind===0?'desk':'support';return schedule().sessions.findIndex(s=>s[field]===teamIndex())}
 function assignmentLabel(kind){const i=assignment(kind);return i<0?'Awaiting assignment':sessionLabel(i)}
 function roleDeferred(i){const n=assignment(i);return n<0||schedule().sessions[n].deferred}
