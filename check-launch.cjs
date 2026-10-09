@@ -1,0 +1,38 @@
+const assert=require('node:assert/strict');
+const {runtime,setup,validSchedules}=require('./lib/runtime-core.cjs');
+const recordsCore=require('./lib/records-core.cjs'),publicCore=require('./lib/public-core.cjs');
+const {processInvitations}=require('./lib/invitations-core.cjs');
+const demo=require('./lib/demo-schedule.cjs');
+function memory(){const rows=new Map();return {rows,getWithMetadata:async key=>rows.get(key)||null,setJSON:async(key,data,opts={})=>{const prior=rows.get(key);if(opts.onlyIfNew&&prior||opts.onlyIfMatch&&prior?.etag!==opts.onlyIfMatch)return {modified:false};const etag=String(Number(prior?.etag||0)+1);rows.set(key,{data:structuredClone(data),etag});return {modified:true,etag}}}}
+(async()=>{
+ const store=memory(),publicStores=new Map(),getPublicStore=name=>{if(!publicStores.has(name))publicStores.set(name,memory());return publicStores.get(name)};
+ const base={store,demo,isInstructor:true,enabled:true,getPublicStore};
+ const req=(body,query='')=>new Request('https://site.test/setup'+query,body?{method:'POST',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(body)}:{});
+ assert(validSchedules(demo));assert(!validSchedules({...demo,EXS215:{...demo.EXS215,teams:[['Duplicate'],['Duplicate']]}}));
+ assert.equal((await setup(req(),{...base,isInstructor:false})).status,403);
+ assert.equal((await setup(req({action:'start-live',confirmation:'START LIVE RECORDS'}),base)).status,400);
+ const old=recordsCore.blank();old.notes.example='Keep this test note';await store.setJSON('instructor-records-v1',old);
+ const oldPublic=getPublicStore('workout-public-test');await oldPublic.setJSON('EXS215:workout-1',[{id:'test',email:'old@example.com',evaluation:{sample:'retained'}}]);
+ assert.equal((await setup(req({action:'roster',schedules:demo}),base)).status,200);
+ assert((await runtime(store,demo)).config.test);
+ assert.equal((await setup(req({action:'start-live',confirmation:'START LIVE RECORDS'}),base)).status,200);
+ const active=await runtime(store,demo);assert.equal(active.config.test,false);assert.notEqual(active.publicStore,'workout-public-test');assert.equal(store.rows.get('instructor-records-v1').data.notes.example,'Keep this test note');assert.deepEqual(store.rows.get(active.recordKey).data.values,{});
+ const backup=await(await setup(req(undefined,'?action=backup'),base)).json();assert.equal(backup.records.notes.example,'Keep this test note');assert.equal(backup.submissions[0].entries[0].evaluation.sample,'retained');
+ assert.equal((await setup(req({action:'start-live',confirmation:'START LIVE RECORDS'}),base)).status,409);
+ const saveReq=new Request('https://site.test/records',{method:'PUT',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify({state:recordsCore.blank(),etag:'1',generation:'demo'})});
+ assert.equal((await recordsCore.handle(saveReq,{enabled:true,user:{id:'owner',email:'owner@sample.invalid'},instructorId:'owner',email:'owner@sample.invalid',store,key:active.recordKey,generation:active.config.generation})).status,409);
+ const live=getPublicStore(active.publicStore),options={store:live,schedules:active.schedules,enabled:true,testMode:false};
+ const call=(action,body,extra={})=>publicCore.handle(new Request('https://site.test/public?action='+action,{method:'POST',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(body)}),{...options,...extra});
+ const checkin={session:'EXS215:workout-1',name:'Sample visitor',email:'guest@sample.invalid',consent:true};
+ const checked=await call('checkin',checkin);assert.equal(checked.status,200);assert.equal((await checked.json()).evaluationPath,null);
+ const entry=live.rows.get(checkin.session).data[0];assert.equal(entry.test,false);
+ const evaluation={session:checkin.session,token:entry.token,format:'workout-only',individual:[],teamRatings:[5,null,4],teamComment:'Sample feedback',permission:false};
+ assert.equal((await call('evaluation',evaluation)).status,409);
+ let sent=[];const statuses={[checkin.session]:'Completed'};
+ const delivery=await processInvitations({store:live,schedules:active.schedules,statuses,live:true,testMode:false,deliver:async message=>{sent.push(message);return {messageId:'sample'}}});assert.equal(delivery.sent,1);assert.equal(sent[0].to,checkin.email);assert(sent[0].html.includes('Share workout feedback'));
+ assert.equal((await call('evaluation',evaluation,{statuses})).status,200);
+ assert.equal((await call('evaluation',evaluation,{statuses})).status,409);
+ assert.equal((await processInvitations({store:live,schedules:active.schedules,statuses,live:true,testMode:false,deliver:async()=>{throw Error('Duplicate send')}})).sent,0);
+ const inbox=await publicCore.handle(new Request('https://site.test/public?action=inbox'),{...options,isInstructor:true,statuses});const data=await inbox.json();assert.equal(data.checkins[0].test,false);assert.equal(data.teamFeedback.length,1);assert.deepEqual(data.teamFeedback[0].include,{});assert(!Object.hasOwn(data.invitations[0],'html'));
+ console.log('Passed: private roster staging, retained full test archive, isolated live records, stale-save rejection, outside visitor check-in, completion-gated feedback, one styled invitation and duplicate prevention.');
+})().catch(e=>{console.error(e);process.exitCode=1});

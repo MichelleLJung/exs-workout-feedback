@@ -1,1 +1,16 @@
-{"name":"exs-workout-feedback","private":true,"scripts":{"build":"node scripts/build.cjs","check":"node check-workflow.cjs && node check-storage.cjs && node check-public.cjs && node check-invitations.cjs && node check-email-connection.cjs"},"dependencies":{"@netlify/blobs":"^10.0.0","@netlify/identity":"^2.0.0","nodemailer":"^7.0.13"},"devDependencies":{"esbuild":"^0.25.0"}}
+{
+  "name": "exs-workout-feedback",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "check": "node check-workflow.cjs && node check-storage.cjs && node check-public.cjs && node check-invitations.cjs && node check-email-connection.cjs && node check-launch.cjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0",
+    "@netlify/identity": "^2.0.0",
+    "nodemailer": "^7.0.13"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
