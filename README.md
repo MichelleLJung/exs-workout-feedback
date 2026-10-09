@@ -66,3 +66,14 @@ This remains a demo-only preview. Real participant collection, automated email d
 ## Short participant evaluation and feedback inbox
 
 The hosted participant form now asks only three whole-workout questions and one optional comment. It does not require participants to identify individual students. This supersedes the earlier full-team individual participant form; earlier submissions remain readable. Instructor grading remains individual and unchanged. Loading online records also refreshes shared feedback and opens Participant feedback, which lists received evaluations across both courses. Existing edited wording and report selections are retained. Workout schedule includes named check-in rosters. Public check-in/evaluation pages no longer repeat creator/licensing blocks; the instructor home links to the licensing page.
+
+
+## Prepared SMTP invitation delivery (not activated)
+
+`workout-invitations.mjs` is a scheduled worker for optional evaluation invitations. It uses the clinic scheduler's Nodemailer/SMTP pattern. By default it exits without sending or changing data. It requires both `EMAIL_MODE=live` and `EXS_TEST_MODE=false` plus `SMTP_HOST`, `SMTP_PORT` (465 or 587), `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM`. Keep credentials in Netlify Functions environment settings; never source code. TLS is required.
+
+Invitations are eligible only when the instructor marks the workout Completed, the participant requested an invitation, the evaluation is not already submitted, and the check-in is explicitly marked `test:false`. Existing demo entries and example.com/org/net recipients are never emailed. The current check-in service remains demo-only, so enabling the worker alone cannot activate real collection. Real-mode check-in/roster setup and a complete backed-up demo reset remain separate launch tasks. The site stays private until launch.
+
+The worker claims each delivery atomically and does not automatically retry an ambiguous SMTP failure; instructor review is required to avoid duplicate invitations. A sending claim interrupted by a process crash also requires review. At most three messages are attempted per run. Inbox responses include only non-secret connection status, and prepared previews show the exact date/time and evaluation invitation wording. Instructor cloud mode disables the browser-only Clear sample data control so it cannot wipe the shared grading record accidentally.
+
+`npm run check` additionally validates preview side effects, consent, completed/canceled sessions, demo exclusion, concurrent delivery claims, duplicate prevention, ambiguous failures and invitation wording. SMTP connectivity and actual delivery have not been tested; this Netlify project currently has no mail credentials. No participant emails were sent.
