@@ -51,3 +51,13 @@ This is not activated or verified with a real instructor account. Identity confi
 
 Created by Michelle L. Jung. © 2026 Michelle L. Jung.
 Original instructional content: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Original code: MIT; see [LICENSE-CODE.txt](LICENSE-CODE.txt). See [LICENSE](LICENSE) for scope, exclusions, and educational disclaimer. Third-party materials and private/user records are excluded from this grant.
+
+## Shared test workflow
+
+The private preview now stores demo participant check-ins and full-team evaluations in Netlify Blobs. Front desk chooses the workout team; the participant enters a fictional name and an `@example.com` address. Check-in metadata shown publicly contains only the demo workout team, date, time and status. Participant records and feedback imports require the approved instructor account.
+
+After loading online instructor records, select **Refresh participant feedback** to import shared check-ins and responses. Existing edited comments and report selections are preserved. Marking a workout Completed closes check-in and prepares evaluation previews for consenting participants; refresh to retrieve preview links. One evaluation covers every teaching team member and separate whole-workout items. Comments start excluded from reports and require sharing consent and instructor selection.
+
+`npm run check` validates grading/schedule behavior, protected record persistence, privacy, consent, closed sessions and concurrent duplicate submissions. `npm run build` bundles instructor authentication and copies the public form assets. A populated five-page report was rendered and visually reviewed with WeasyPrint; browser Save as PDF pagination may differ.
+
+This remains a demo-only preview. Real participant collection, automated email delivery and the public launch are unfinished. No participant messages are sent.
