@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),{invitation,processInvitations}=require('./lib/invitations-core.cjs');
+(async()=>{const key='EXS215:workout-1',session={date:'2026-10-20',time:'8:30–9:15'},schedules={EXS215:{sessions:[session]}},records=new Map(),calls=[];
+const entry=(id,extra={})=>({id,session:key,name:'Fictional',email:id+'@mail.test',token:'a'.repeat(48),consent:true,test:false,...extra});
+const reset=rows=>records.set(key,{data:rows,etag:'1'});const store={getWithMetadata:async k=>records.get(k)||null,setJSON:async(k,data,options)=>{const prior=records.get(k);if(prior.etag!==options.onlyIfMatch)return {modified:false};records.set(k,{data,etag:String(Number(prior.etag)+1)});return {modified:true}}};const base={store,schedules,statuses:{[key]:'Completed'},deliver:async message=>{calls.push(message);return {messageId:'smtp-id'}}};
+reset([entry('guest')]);assert.equal((await processInvitations(base)).mode,'preview');assert.equal(calls.length,0);assert(!records.get(key).data[0].delivery);assert.equal((await processInvitations({...base,live:true})).mode,'preview');assert.equal(calls.length,0);
+reset([entry('guest'),entry('no-consent',{consent:false}),entry('already-evaluated',{evaluation:{}}),entry('demo',{test:true}),entry('example',{email:'guest@example.com'})]);
+const live={...base,live:true,testMode:false};await Promise.all([processInvitations(live),processInvitations(live)]);assert.equal(calls.length,1);assert.equal(records.get(key).data[0].delivery.status,'sent');await processInvitations(live);assert.equal(calls.length,1);
+reset([entry('closed')]);await processInvitations({...live,statuses:{[key]:'Canceled'}});assert.equal(calls.length,1);
+reset([entry('failure')]);await processInvitations({...live,deliver:async()=>{throw Error('private SMTP error')}});assert.equal(records.get(key).data[0].delivery.status,'needs-review');await processInvitations(live);assert.equal(calls.length,1);
+const msg=invitation(entry('guest'),session);assert(msg.text.includes('Tuesday, October 20, 2026'));assert(msg.text.includes('8:30–9:15 AM (Arizona time)'));assert(msg.text.includes('three quick questions'));assert(!msg.text.includes('Fictional'));assert(!msg.text.includes('grade'));
+console.log('Passed: email preview has no side effects; consent/completion/test gates, concurrent send claims, duplicate prevention, no automatic retry after uncertain SMTP failure, readable invitation date/time and private grading exclusion.');
+})().catch(e=>{console.error(e);process.exitCode=1});
