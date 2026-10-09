@@ -1,3 +1,4 @@
+import {getIdentityConfig} from '@netlify/identity';
 import {getStore} from '@netlify/blobs';
 import core from '../../lib/records-core.cjs';
 async function verifiedInstructor(req){
@@ -6,7 +7,9 @@ async function verifiedInstructor(req){
  const bearer=req.headers.get('authorization');
  const token=bearer?.startsWith('Bearer ')?bearer.slice(7):match?decodeURIComponent(match[1]):null;
  if(!token)return null;
- const endpoint=new URL('/.netlify/identity/user',process.env.URL);
+ const identity=getIdentityConfig();
+ if(!identity?.url)return null;
+ const endpoint=identity.url.replace(/\/$/,'')+'/user';
  const response=await fetch(endpoint,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
  if(!response.ok)return null;
  const user=await response.json();
