@@ -45,3 +45,9 @@ This repository uses demonstration student names. Do not commit real rosters, as
 An instructor-only records endpoint and sign-in panel are implemented. They deny access unless EXS_CLOUD_ENABLED=true, EXS_ADMIN_EMAIL is configured, Identity verifies a confirmed user with that exact email, and storage is available. Reads are not cached. Writes require the same origin, valid JSON/schema, a payload under 2 MB and a matching stored version. Conflicts preserve the current work and require export/reload; they do not silently overwrite. Browser test data is not automatically uploaded. Select Load online records after signing in.
 
 This is not activated or verified with a real instructor account. Identity configuration/account setup is still needed. Public check-in currently remains a browser-local test flow and does not write to these instructor records. Evaluation links, email, protected roster loading, report-release workflow and semester closeout still require implementation. Do not collect real participant information or grades yet.
+
+
+## Licensing and creator credit
+
+Created by Michelle L. Jung. © 2026 Michelle L. Jung.
+Original instructional content: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Original code: MIT; see [LICENSE-CODE.txt](LICENSE-CODE.txt). See [LICENSE](LICENSE) for scope, exclusions, and educational disclaimer. Third-party materials and private/user records are excluded from this grant.
