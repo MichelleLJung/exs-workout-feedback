@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict'),{handle}=require('./lib/observers-core.cjs'),schedules=require('./lib/demo-schedule.cjs');
+(async()=>{
+ const records=new Map(),store={getWithMetadata:async k=>records.get(k)||null,setJSON:async(k,data,opts)=>{const old=records.get(k);if(opts.onlyIfNew&&old||opts.onlyIfMatch&&old?.etag!==opts.onlyIfMatch)return {modified:false};const etag=String(Number(old?.etag||0)+1);records.set(k,{data,etag});return {modified:true,etag}}};
+ const session='EXS215:workout-1',base={enabled:true,store,schedules,state:{observerAssignments:{},sessions:{}},generation:'demo'},url='https://site.test/.netlify/functions/observer-workouts';
+ const call=(action,body,extra={})=>handle(new Request(url+'?action='+action,body===undefined?{}:{method:'POST',headers:{origin:'https://site.test','Content-Type':'application/json'},body:JSON.stringify(body)}),{...base,...extra});
+ assert.equal((await call('inbox')).status,403);assert.equal((await call('issue',{session,generation:'demo'})).status,403);
+ assert.equal((await call('issue',{session,generation:'old'},{isInstructor:true})).status,409);
+ const issue=await call('issue',{session,generation:'demo'},{isInstructor:true});assert.equal(issue.status,200);const links=(await issue.json()).links;assert.equal(links.length,2);assert.notEqual(links[0].path,links[1].path);
+ const link=links[0],token=new URLSearchParams(link.path.split('#')[1]).get('token');
+ assert.equal((await call('details',{session,token:'a'.repeat(48)})).status,404);
+ let details=await(await call('details',{session,token})).json();assert.equal(details.observer,link.observer);assert.equal(details.submitted,false);assert.equal(details.prompts.length,4);assert(!Object.hasOwn(details,'observers'));assert(!Object.hasOwn(details,'values'));
+ const answers=details.instructors.map(()=>['Useful cue example','Adaptation example','Specific improvement','Practice to adopt']);
+ assert.equal((await call('submit',{session,token,answers:[['']]})).status,400);
+ assert.equal((await call('submit',{session,token,answers})).status,200);
+ let inbox=await(await call('inbox',undefined,{isInstructor:true})).json();assert.equal(inbox.observers.length,details.instructors.length);assert.equal(inbox.observers[0].include,false);assert.equal(inbox.observers[0].source,'shared-observer');assert(!JSON.stringify(inbox).includes(token));
+ const otherToken=new URLSearchParams(links[1].path.split('#')[1]).get('token');assert.equal((await(await call('details',{session,token:otherToken})).json()).answers,null);
+ const updated=answers.map(a=>a.map(text=>text+' updated'));await Promise.all([call('submit',{session,token,answers:updated}),call('submit',{session,token:otherToken,answers})]);
+ inbox=await(await call('inbox',undefined,{isInstructor:true})).json();assert.equal(inbox.observers.length,details.instructors.length*2);assert(inbox.observers.filter(r=>r.observer===link.observer).every(r=>r.answers[0].endsWith('updated')));
+ const changed={...base.state,observerAssignments:{[session]:[]}};assert.equal((await call('details',{session,token},{state:changed})).status,404);assert.equal((await call('issue',{session,generation:'demo'},{state:changed,isInstructor:true})).status,409);assert.equal((await call('details',{session,token},{state:{sessions:{[session]:'Canceled'}}})).status,404);
+ const repeated=(await(await call('issue',{session,generation:'demo'},{isInstructor:true})).json()).links;assert.deepEqual(repeated,links);
+ const crossOrigin=new Request(url+'?action=submit',{method:'POST',headers:{origin:'https://elsewhere.test','Content-Type':'application/json'},body:JSON.stringify({session,token,answers})});assert.equal((await handle(crossOrigin,base)).status,403);
+ console.log('Passed: instructor-only link issuance/inbox, per-observer tokens, private responses, validated assignments, complete evidence, concurrent submissions, safe replacement, reusable links, cancellation and origin protection.');
+})().catch(error=>{console.error(error);process.exitCode=1});

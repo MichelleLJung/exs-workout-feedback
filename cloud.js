@@ -6,7 +6,7 @@ let cloudActive=false,cloudETag=null,cloudBlocked=false,cloudTimer,cloudSaving=f
 function cloudStatus(text){document.querySelector('#saved').textContent=text}
 function showInstructorLogin(){const panel=document.querySelector('#instructor-login');panel.hidden=false;panel.scrollIntoView({block:'center'});panel.querySelector('input').focus();document.querySelector('#signout').hidden=true;}
 function recordHeaders(){const match=document.cookie.match(/(?:^|;\s*)nf_jwt=([^;]+)/);return match?{Authorization:'Bearer '+decodeURIComponent(match[1])}:{}}
-async function loadOnline(){if(cloudActive&&(cloudTimer||cloudSaving||cloudDirty||cloudBlocked)){cloudStatus('Save or export your current work before loading online records again.');return}if(!window.workoutIdentity){cloudStatus('Instructor sign-in is not available yet.');return}const user=await workoutIdentity.getUser();if(!user){showInstructorLogin();recordsLoadFailed('Sign in to load your course roster and saved assessments.');return}const response=await fetch('/.netlify/functions/records',{cache:'no-store',headers:recordHeaders()});const data=await response.json();if(!response.ok){if(response.status===401)showInstructorLogin();recordsLoadFailed(data.error||'Your records could not be loaded. Select Load online records to retry.');return}state=data.state;cloudETag=data.etag;cloudGeneration=data.generation;cloudTestMode=data.test!==false;if(data.schedules)Object.assign(courseSchedules,data.schedules);syncTeams();syncStudents();cloudActive=true;cloudBlocked=false;updateStorageMode();document.body.dataset.recordsReady='true';recordsNotice.hidden=true;render();cloudStatus('Protected records loaded. Changes will save online.');await refreshParticipants(false);}
+async function loadOnline(){if(cloudActive&&(cloudTimer||cloudSaving||cloudDirty||cloudBlocked)){cloudStatus('Save or export your current work before loading online records again.');return}if(!window.workoutIdentity){cloudStatus('Instructor sign-in is not available yet.');return}const user=await workoutIdentity.getUser();if(!user){showInstructorLogin();recordsLoadFailed('Sign in to load your course roster and saved assessments.');return}const response=await fetch('/.netlify/functions/records',{cache:'no-store',headers:recordHeaders()});const data=await response.json();if(!response.ok){if(response.status===401)showInstructorLogin();recordsLoadFailed(data.error||'Your records could not be loaded. Select Load online records to retry.');return}state=data.state;cloudETag=data.etag;cloudGeneration=data.generation;cloudTestMode=data.test!==false;if(data.schedules)Object.assign(courseSchedules,data.schedules);syncTeams();syncStudents();cloudActive=true;cloudBlocked=false;updateStorageMode();document.body.dataset.recordsReady='true';recordsNotice.hidden=true;render();cloudStatus('Protected records loaded. Changes will save online.');await refreshParticipants(false);await refreshObservers(false);}
 async function saveOnline(){cloudTimer=null;if(!cloudActive||cloudBlocked)return;if(cloudSaving){cloudDirty=true;return}cloudSaving=true;cloudDirty=false;try{const response=await fetch('/.netlify/functions/records',{method:'PUT',headers:{'Content-Type':'application/json',...recordHeaders()},body:JSON.stringify({state:{...state,schema:'schedule-v2'},etag:cloudETag,generation:cloudGeneration})});const data=await response.json();if(!response.ok){cloudBlocked=true;cloudStatus(data.error+' Export your current work before leaving.');return}cloudETag=data.etag;cloudStatus('Saved online · '+new Date(data.saved).toLocaleTimeString());}finally{cloudSaving=false;if(cloudDirty&&!cloudBlocked)queueCloudSave()}}
 function queueCloudSave(){cloudDirty=true;clearTimeout(cloudTimer);cloudStatus('Unsaved online changes…');cloudTimer=setTimeout(()=>saveOnline().catch(()=>{cloudBlocked=true;cloudStatus('Online save failed. Export your current work before leaving.')}),800)}
 document.querySelector('#load-online').addEventListener('click',()=>loadOnline().catch(()=>recordsLoadFailed('Online records could not be loaded. Select Load online records to retry.')));
@@ -32,3 +32,28 @@ async function excludeTestCheckin(button){
  try{const response=await fetch('/.netlify/functions/public-workouts?action=exclude-test',{method:'POST',headers:{'Content-Type':'application/json',...recordHeaders()},body:JSON.stringify({session:button.dataset.excludeSession,id:button.dataset.excludeCheckin,excluded:button.dataset.restoreEntry!=='true'})}),data=await response.json();if(!response.ok)throw Error(data.error);await refreshParticipants();cloudStatus(data.message)}catch(error){cloudStatus(error.message||'The test entry could not be excluded.')}finally{button.disabled=false}
 }
 document.addEventListener('click',e=>{const button=e.target.closest('[data-exclude-checkin]');if(button)excludeTestCheckin(button)});
+
+async function refreshObservers(showStatus=true){
+ if(!cloudActive||cloudBlocked)return;
+ const response=await fetch('/.netlify/functions/observer-workouts?action=inbox',{cache:'no-store',headers:recordHeaders()}),data=await response.json();
+ if(!response.ok)throw Error(data.error||'Observer submissions could not be refreshed.');
+ const incoming=new Map(data.observers.map(r=>[r.id,r]));
+ state.observers=state.observers.filter(r=>r.source!=='shared-observer'||incoming.has(r.id));
+ for(const row of data.observers){const index=state.observers.findIndex(r=>r.id===row.id);if(index<0)state.observers.push(row);else if(state.observers[index].created!==row.created)state.observers[index]=row;}
+ save();render();if(showStatus)cloudStatus('Observer submissions refreshed. Updated submissions need report selections reviewed again.');
+}
+async function issueObserverLinks(button){
+ if(!cloudActive||cloudBlocked){cloudStatus('Load online records first.');return}
+ if(cloudSaving){cloudStatus('Online saving is in progress. Try Get observer links again after Saved online appears.');return}
+ button.disabled=true;
+ try{
+  if(cloudTimer||cloudDirty){clearTimeout(cloudTimer);await saveOnline();if(cloudBlocked)throw Error('Save your observer assignments before generating links.');}
+  const response=await fetch('/.netlify/functions/observer-workouts?action=issue',{method:'POST',headers:{'Content-Type':'application/json',...recordHeaders()},body:JSON.stringify({session:button.dataset.issueObservers,generation:cloudGeneration})}),data=await response.json();
+  if(!response.ok)throw Error(data.error);observerLinks[button.dataset.issueObservers]=data.links;render();document.querySelector('#observer-links-status').textContent='Links ready. Share each link only with its assigned observer.';
+ }catch(error){cloudStatus(error.message||'Observer links could not be created.')}finally{button.disabled=false}
+}
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.issueObservers)issueObserverLinks(b);
+ if(b.dataset.refreshObservers){b.disabled=true;try{await refreshObservers()}catch(error){cloudStatus(error.message)}finally{b.disabled=false}}
+ if(b.dataset.copyObserver){try{await navigator.clipboard.writeText(location.origin+b.dataset.copyObserver);b.textContent='Copied'}catch{document.querySelector('#observer-links-status').textContent='Select and copy the link from the field above.'}}
+});
