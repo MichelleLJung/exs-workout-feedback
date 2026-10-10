@@ -28,7 +28,7 @@ check(`const answers={observer:'DemoG'};instructors().forEach((_,j)=>observerPro
 elements['#student'].value='DemoB';
 check(`assert.equal(participantResponses()[0].ratings[0],3);assert(!feedbackReport().includes('Clear &lt;cue&gt;'));assert(!feedbackReport().includes('<strong>Team feedback:</strong>'));`);
 elements['#student'].value='DemoC';
-check(`assert.equal(supportNames().length,3);assert.equal(assignedObservers().length,0);assert(!observerView().includes('id="observer-form"'));state.observerAssignments[sessionKey(teachingIndex())]=['DemoI','DemoK'];assert(observerView().includes('id="observer-form"'));`);
+check(`assert.equal(supportNames().length,3);assert.equal(assignedObservers().length,3);assert(observerView().includes('id="observer-form"'));state.observerAssignments[sessionKey(teachingIndex())]=['DemoI','DemoK'];assert.equal(assignedObservers().length,3);assert(observerView().includes('id="observer-form"'));assert(!observerView().includes('data-observer-assignment'));`);
 elements['#student'].value='DemoI';
 check(`assert.equal(instructors().length,3);assert(participantView().includes('name="p2q5"'));`);
 console.log('Passed: one evaluation covers all instructors, N/A handling, team context separation, report comment consent/redaction, observer assignment and resubmission, report compilation.');

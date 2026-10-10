@@ -16,8 +16,13 @@ const assert=require('node:assert/strict'),{handle}=require('./lib/observers-cor
  const otherToken=new URLSearchParams(links[1].path.split('#')[1]).get('token');assert.equal((await(await call('details',{session,token:otherToken})).json()).answers,null);
  const updated=answers.map(a=>a.map(text=>text+' updated'));await Promise.all([call('submit',{session,token,answers:updated}),call('submit',{session,token:otherToken,answers})]);
  inbox=await(await call('inbox',undefined,{isInstructor:true})).json();assert.equal(inbox.observers.length,details.instructors.length*2);assert(inbox.observers.filter(r=>r.observer===link.observer).every(r=>r.answers[0].endsWith('updated')));
- const changed={...base.state,observerAssignments:{[session]:[]}};assert.equal((await call('details',{session,token},{state:changed})).status,404);assert.equal((await call('issue',{session,generation:'demo'},{state:changed,isInstructor:true})).status,409);assert.equal((await call('details',{session,token},{state:{sessions:{[session]:'Canceled'}}})).status,404);
+ const changed={...base.state,observerAssignments:{[session]:[]}};assert.equal((await call('details',{session,token},{state:changed})).status,200);assert.equal((await call('details',{session,token},{state:{sessions:{[session]:'Canceled'}}})).status,404);
  const repeated=(await(await call('issue',{session,generation:'demo'},{isInstructor:true})).json()).links;assert.deepEqual(repeated,links);
+ const threeSchedules=structuredClone(schedules);threeSchedules.EXS215.teams[threeSchedules.EXS215.sessions[0].support].push('Third Support Observer');
+ const allLinks=(await(await call('issue',{session,generation:'demo'},{isInstructor:true,schedules:threeSchedules,state:changed})).json()).links;assert.equal(allLinks.length,3);assert.equal(allLinks[0].path,links[0].path);
+ const thirdToken=new URLSearchParams(allLinks[2].path.split('#')[1]).get('token');assert.equal((await call('submit',{session,token:thirdToken,answers},{schedules:threeSchedules})).status,200);
+ const threeInbox=await(await call('inbox',undefined,{isInstructor:true,schedules:threeSchedules})).json();assert.equal(threeInbox.observers.length,details.instructors.length*3);
+ assert.equal((await call('details',{session,token:thirdToken})).status,404);
  const crossOrigin=new Request(url+'?action=submit',{method:'POST',headers:{origin:'https://elsewhere.test','Content-Type':'application/json'},body:JSON.stringify({session,token,answers})});assert.equal((await handle(crossOrigin,base)).status,403);
  console.log('Passed: instructor-only link issuance/inbox, per-observer tokens, private responses, validated assignments, complete evidence, concurrent submissions, safe replacement, reusable links, cancellation and origin protection.');
 })().catch(error=>{console.error(error);process.exitCode=1});
