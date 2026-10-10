@@ -8,4 +8,18 @@ for(const id of ['roster-setup','live-setup'])document.querySelector('#'+id).add
  }catch{output.textContent='Setup could not be completed. Existing records remain intact.'}finally{button.disabled=false}
 });
 
-document.querySelector('#archive-export').addEventListener('click',async()=>{const output=document.querySelector('#launch-status');try{const response=await fetch('/.netlify/functions/launch-setup?action=backup',{cache:'no-store',headers:recordHeaders()}),result=await response.json();if(!response.ok)throw Error(result.error);const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='workout-complete-test-backup.json';a.click();URL.revokeObjectURL(url);output.textContent='Complete test backup downloaded, including shared check-ins and evaluations.';}catch{output.textContent='Backup could not be downloaded. No data was changed.'}});
+document.querySelector('#archive-export').addEventListener('click',async()=>{
+ const output=document.querySelector('#launch-status'),button=document.querySelector('#archive-export');
+ button.disabled=true;output.textContent='Preparing your complete test backup…';
+ try{
+  const response=await fetch('/.netlify/functions/launch-setup?action=backup',{cache:'no-store',headers:recordHeaders(),signal:AbortSignal.timeout(30000)});
+  let result;try{result=await response.json()}catch{throw Error('The backup service did not return a valid response. Reload the page and load online records before retrying.')}
+  if(!response.ok)throw Error(result.error||'Backup request failed ('+response.status+').');
+  const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download='workout-complete-test-backup.json';a.textContent='Save your complete test backup';a.className='nav-link';
+  output.replaceChildren(document.createTextNode('Backup ready. If the download does not start, use this link: '),a);
+  a.click();
+  // Keep the visible link usable if the browser blocks the automatic download.
+ }catch(error){output.textContent=(error.name==='TimeoutError'?'The backup request timed out. Try again.':error.message||'Backup could not be downloaded.')+' No data was changed.'}
+ finally{button.disabled=false}
+});
