@@ -57,3 +57,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
  if(b.dataset.refreshObservers){b.disabled=true;try{await refreshObservers()}catch(error){cloudStatus(error.message)}finally{b.disabled=false}}
  if(b.dataset.copyObserver){try{await navigator.clipboard.writeText(location.origin+b.dataset.copyObserver);b.textContent='Copied'}catch{document.querySelector('#observer-links-status').textContent='Select and copy the link from the field above.'}}
 });
+
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-reset-observer]');if(!button)return;if(!cloudActive||cloudBlocked){cloudStatus('Load online records first.');return}button.disabled=true;
+ try{const response=await fetch('/.netlify/functions/observer-workouts?action=reset-test',{method:'POST',headers:{'Content-Type':'application/json',...recordHeaders()},body:JSON.stringify({session:button.dataset.resetSession,observer:button.dataset.resetObserver,created:button.dataset.resetCreated,generation:cloudGeneration})}),data=await response.json();if(!response.ok)throw Error(data.error);await refreshObservers(false);const notice=document.querySelector('#observer-links-status');if(notice)notice.textContent=data.message;cloudStatus(data.message)}catch(error){cloudStatus(error.message||'The test observation could not be archived.')}finally{button.disabled=false}
+});

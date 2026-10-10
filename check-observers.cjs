@@ -23,6 +23,17 @@ const assert=require('node:assert/strict'),{handle}=require('./lib/observers-cor
  const thirdToken=new URLSearchParams(allLinks[2].path.split('#')[1]).get('token');assert.equal((await call('submit',{session,token:thirdToken,answers},{schedules:threeSchedules})).status,200);
  const threeInbox=await(await call('inbox',undefined,{isInstructor:true,schedules:threeSchedules})).json();assert.equal(threeInbox.observers.length,details.instructors.length*3);
  assert.equal((await call('details',{session,token:thirdToken})).status,404);
+ const resetBody={session,observer:link.observer,generation:'demo',created:inbox.observers[0].created};
+ assert.equal((await call('reset-test',resetBody)).status,403);
+ assert.equal((await call('reset-test',resetBody,{isInstructor:true})).status,409);
+ await call('submit',{session,token,answers:answers.map(row=>row.map(()=> 'TEST ONLY — please disregard'))});
+ const testInbox=await(await call('inbox',undefined,{isInstructor:true})).json();resetBody.created=testInbox.observers.find(r=>r.observer===link.observer).created;
+ assert.equal((await call('reset-test',{...resetBody,created:'stale'},{isInstructor:true})).status,409);
+ assert.equal((await call('reset-test',resetBody,{isInstructor:true})).status,200);
+ assert.equal((await(await call('details',{session,token})).json()).submitted,false);
+ assert.equal(records.get(session).data.links.find(l=>l.observer===link.observer).testArchive.length,1);
+ assert(!(await(await call('inbox',undefined,{isInstructor:true})).json()).observers.some(r=>r.observer===link.observer));
+ assert.equal((await call('submit',{session,token,answers})).status,200);
  const crossOrigin=new Request(url+'?action=submit',{method:'POST',headers:{origin:'https://elsewhere.test','Content-Type':'application/json'},body:JSON.stringify({session,token,answers})});assert.equal((await handle(crossOrigin,base)).status,403);
  console.log('Passed: instructor-only link issuance/inbox, per-observer tokens, private responses, validated assignments, complete evidence, concurrent submissions, safe replacement, reusable links, cancellation and origin protection.');
 })().catch(error=>{console.error(error);process.exitCode=1});
