@@ -41,3 +41,5 @@ form label{margin:12px 0;line-height:1.5}form fieldset{background:white}form fie
 @media screen and (max-width:600px){
  .workout-session{padding:18px}.assignment-grid{grid-template-columns:1fr;gap:8px}.assignment-box{padding:12px}.session-context,.assessment-context{grid-template-columns:1fr}.session-heading h3{font-size:18px}.session-actions .primary-action{width:100%}.evaluation-heading{padding:22px}.evaluation-heading h1{font-size:29px}.evaluation-card fieldset.experience-question{padding:14px 10px}.experience-scale{gap:5px}.experience-option span{padding:10px 3px;min-height:106px}.experience-option small{font-size:11px}.experience-option strong{font-size:23px}
 }
+
+body[data-records-ready="false"] .selection-panel,body[data-records-ready="false"] .workspace-nav,body[data-records-ready="false"] #content{display:none}
