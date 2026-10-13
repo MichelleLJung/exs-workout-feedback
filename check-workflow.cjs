@@ -40,3 +40,6 @@ console.log('Passed: check-in names, consent, test marking, retained team select
 elements['#course'].value='EXS215';elements['#student'].value='DemoA';
 check(`const inbox=participantInboxView();assert(inbox.includes('evaluation'));assert(inbox.includes('Good flow'));assert(inbox.includes('Earlier individual feedback'));assert(inbox.includes('data-review-course="EXS215"'));assert(checkinRoster(1).includes('Sample Guest'));assert(!participantInboxView().includes('name@example.com'));`);
 console.log('Passed: feedback inbox shows received comments and earlier individual responses; check-in roster shows participant names separately.');
+
+check(`state.feedback=[];state.teamFeedback=[];assert(!feedbackReport().includes("instruction · earlier individual feedback"));assert(feedbackReport().includes('Whole workout experience'));assert(rating('Workout Design',key('shared',0),standards[0]).includes('<small>Meets</small>'));assert(assessmentProgress('roles').includes('Awaiting opportunity'));`);
+console.log('Passed: visible rating descriptions, deferred-aware progress and omission of empty legacy individual feedback.');
