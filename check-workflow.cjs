@@ -43,3 +43,6 @@ console.log('Passed: feedback inbox shows received comments and earlier individu
 
 check(`state.feedback=[];state.teamFeedback=[];assert(!feedbackReport().includes("instruction · earlier individual feedback"));assert(feedbackReport().includes('Whole workout experience'));assert(rating('Workout Design',key('shared',0),standards[0]).includes('<small>Meets</small>'));assert(assessmentProgress('roles').includes('Awaiting opportunity'));`);
 console.log('Passed: visible rating descriptions, deferred-aware progress and omission of empty legacy individual feedback.');
+
+check(`const oldTable=feedbackTable(teamItems,[{ratings:[1,2,3]}]);assert(oldTable.includes('Instructions and demonstrations made it clear what to do</th><td>No ratings</td><td>0</td>'));assert(oldTable.includes('I could participate safely, with an appropriate option when needed</th><td>2.00</td>'));`);
+console.log('Passed: legacy three-question responses remain aligned after adding the coaching question.');

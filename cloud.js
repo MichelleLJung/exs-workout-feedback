@@ -24,7 +24,7 @@ document.querySelector('#refresh-participants').addEventListener('click',refresh
 
 document.querySelector('#check-email').addEventListener('click',async()=>{const button=document.querySelector('#check-email');button.disabled=true;cloudStatus('Checking email connection…');try{const response=await fetch('/.netlify/functions/email-connection',{method:'POST',headers:recordHeaders()}),data=await response.json();cloudStatus(response.ok?data.message:data.error);}catch{cloudStatus('Email connection check could not be completed. No message was sent.');}finally{button.disabled=false}});
 
-document.querySelector('#send-test-email').addEventListener('click',async()=>{const button=document.querySelector('#send-test-email');button.disabled=true;cloudStatus('Sending one styled test email to your MCC address…');try{const response=await fetch('/.netlify/functions/email-test',{method:'POST',headers:recordHeaders()}),data=await response.json();cloudStatus(data.message||data.error);}catch{cloudStatus('Sending result is uncertain. Check your MCC inbox before retrying.');}});
+document.querySelector('#send-test-email').addEventListener('click',()=>window.open('/email-preview.html','_blank','noopener,noreferrer'));
 
 async function excludeTestCheckin(button){
  if(!cloudActive||cloudBlocked){cloudStatus('Load online records first.');return}

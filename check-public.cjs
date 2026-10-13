@@ -13,7 +13,7 @@ const simplePath=(await(await call('checkin',{...checkin,email:'simple@example.c
 const simpleToken=new URL(simplePath,'https://site.test').searchParams.get('token');
 assert.equal((await call('evaluation',{session:checkin.session,token:simpleToken,format:'workout-only',individual:[],permission:false,teamRatings:[4,null,5],teamComment:'Fictional short comment'})).status,200);
 const updated=await(await call('inbox',undefined,'',{isInstructor:true})).json();assert.equal(updated.teamFeedback.length,2);assert.equal(updated.feedback.length,details.session.instructors.length);assert.equal(updated.teamFeedback[1].permission,false);assert.deepEqual(updated.teamFeedback[1].include,{});
-const noConsent=await(await call('checkin',{...checkin,email:'other@example.com',consent:false})).json();assert.equal(noConsent.evaluationPath,null);
+const noConsent=await(await call('checkin',{...checkin,email:'other@example.com',consent:false})).json();assert(noConsent.evaluationPath);
 const entryId=records.get(checkin.session).data[0].id;
 assert.equal((await call('exclude-test',{session:checkin.session,id:entryId,excluded:true})).status,403);
 assert.equal((await call('exclude-test',{session:checkin.session,id:entryId,excluded:true},'',{isInstructor:true})).status,200);
@@ -22,5 +22,17 @@ assert.equal(excludedInbox.feedback.length,0);assert.equal(excludedInbox.teamFee
 assert.equal((await call('evaluation',undefined,query)).status,404);
 assert.equal((await call('exclude-test',{session:checkin.session,id:entryId,excluded:false},'',{isInstructor:true})).status,200);
 assert.equal((await(await call('inbox',undefined,'',{isInstructor:true})).json()).feedback.length,details.session.instructors.length);
+const liveCheckin={session:checkin.session,name:'New attendee',email:'new@sample.invalid'};
+assert.equal((await call('checkin',liveCheckin,'',{testMode:false})).status,200);
+const liveEntry=records.get(checkin.session).data.find(e=>e.email===liveCheckin.email);assert.equal(liveEntry.consent,true);assert.equal(liveEntry.evaluationExpected,true);
+const v2={session:checkin.session,token:liveEntry.token,format:'workout-v2',individual:[],teamRatings:[5,4,null,3],helpful:'The demonstration helped me understand the movement.',improvement:'Allow more time to adjust equipment.',permission:false};
+const liveOptions={testMode:false,statuses:{[checkin.session]:'Completed'}};
+assert.equal((await call('evaluation',{...v2,helpful:''},'',liveOptions)).status,400);
+assert.equal((await call('evaluation',{...v2,improvement:'   '},'',liveOptions)).status,400);
+assert.equal((await call('evaluation',{...v2,teamRatings:[5,4,3]},'',liveOptions)).status,400);
+assert.equal((await call('evaluation',{...v2,format:'workout-only'},'',liveOptions)).status,400);
+assert.equal((await call('evaluation',v2,'',liveOptions)).status,200);
+const savedTeam=records.get(checkin.session).data.find(e=>e.id===liveEntry.id).evaluation.team;
+assert.equal(savedTeam.helpful,v2.helpful);assert.equal(savedTeam.improvement,v2.improvement);assert.equal(savedTeam.permission,false);assert.deepEqual(savedTeam.include,{});assert.equal(savedTeam.ratings.length,4);
 console.log('Passed: public metadata privacy, protected inbox, origin/schema checks, demo-only addresses, closed sessions, concurrent duplicate prevention, consent, full-team evaluation, N/A ratings, single submission and default comment exclusion.');
 })().catch(e=>{console.error(e);process.exitCode=1});

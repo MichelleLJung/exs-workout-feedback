@@ -26,7 +26,7 @@ function memory(){const rows=new Map();return {rows,getWithMetadata:async key=>r
  const checkin={session:'EXS215:workout-1',name:'Sample visitor',email:'guest@sample.invalid',consent:true};
  const checked=await call('checkin',checkin);assert.equal(checked.status,200);assert.equal((await checked.json()).evaluationPath,null);
  const entry=live.rows.get(checkin.session).data[0];assert.equal(entry.test,false);
- const evaluation={session:checkin.session,token:entry.token,format:'workout-only',individual:[],teamRatings:[5,null,4],teamComment:'Sample feedback',permission:false};
+ const evaluation={session:checkin.session,token:entry.token,format:'workout-v2',individual:[],teamRatings:[5,null,4,5],helpful:'Sample helpful example',improvement:'Sample improvement',permission:false};
  assert.equal((await call('evaluation',evaluation)).status,409);
  let sent=[];const statuses={[checkin.session]:'Completed'};
  const delivery=await processInvitations({store:live,schedules:active.schedules,statuses,live:true,testMode:false,deliver:async message=>{sent.push(message);return {messageId:'sample'}}});assert.equal(delivery.sent,1);assert.equal(sent[0].to,checkin.email);assert(sent[0].html.includes('Share workout feedback'));
