@@ -22,6 +22,7 @@ assert.equal(excludedInbox.feedback.length,0);assert.equal(excludedInbox.teamFee
 assert.equal((await call('evaluation',undefined,query)).status,404);
 assert.equal((await call('exclude-test',{session:checkin.session,id:entryId,excluded:false},'',{isInstructor:true})).status,200);
 assert.equal((await(await call('inbox',undefined,'',{isInstructor:true})).json()).feedback.length,details.session.instructors.length);
+assert.equal((await call('checkin',{...checkin,email:'example@example.com'},'',{testMode:false})).status,400);
 const liveCheckin={session:checkin.session,name:'New attendee',email:'new@sample.invalid'};
 assert.equal((await call('checkin',liveCheckin,'',{testMode:false})).status,200);
 const liveEntry=records.get(checkin.session).data.find(e=>e.email===liveCheckin.email);assert.equal(liveEntry.consent,true);assert.equal(liveEntry.evaluationExpected,true);

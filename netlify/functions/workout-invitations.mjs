@@ -12,6 +12,10 @@ export default async()=>{
  const records=getStore({name:'workout-instructor-records',consistency:'strong'}),active=await runtimeCore.runtime(records,demo);
  if(active.config.test)return Response.json({mode:'preview',sent:0});
  const saved=await records.getWithMetadata(active.recordKey,{type:'json',consistency:'strong'});
- const transport=nodemailer.createTransport({host:process.env.SMTP_HOST,port:Number(process.env.SMTP_PORT),secure:Number(process.env.SMTP_PORT)===465,requireTLS:Number(process.env.SMTP_PORT)===587,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS},connectionTimeout:5000,greetingTimeout:5000,socketTimeout:5000});
- return Response.json(await core.processInvitations({store:getStore({name:active.publicStore,consistency:'strong'}),schedules:active.schedules,statuses:saved?.data?.sessions||{},live:true,testMode:false,deliver:message=>transport.sendMail({from:process.env.EMAIL_FROM,...message})}));
+ const healthKey='email-worker-status-'+active.config.generation;
+ await records.setJSON(healthKey,{started:new Date().toISOString()});
+ const transport=nodemailer.createTransport({pool:true,maxConnections:1,maxMessages:50,maxRequeues:0,dnsTimeout:3000,host:process.env.SMTP_HOST,port:Number(process.env.SMTP_PORT),secure:Number(process.env.SMTP_PORT)===465,requireTLS:Number(process.env.SMTP_PORT)===587,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS},connectionTimeout:3000,greetingTimeout:3000,socketTimeout:3000});
+ try{const result=await core.processInvitations({store:getStore({name:active.publicStore,consistency:'strong'}),schedules:active.schedules,statuses:saved?.data?.sessions||{},live:true,testMode:false,deliver:message=>transport.sendMail({from:process.env.EMAIL_FROM,...message})});
+ await records.setJSON(healthKey,{finished:new Date().toISOString(),...result});return Response.json(result);
+ }catch{await records.setJSON(healthKey,{finished:new Date().toISOString(),failed:true});return Response.json({error:'Invitation processing needs review.'},{status:503});}finally{transport.close();}
 };
