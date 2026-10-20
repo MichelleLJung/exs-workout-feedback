@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const elements={'#course':{value:'EXS215'},'#student':{value:'DemoA'},'#saved':{},'#content':{},'#import':{addEventListener(){}}};
 const context=vm.createContext({window:{addEventListener(){}},document:{querySelector:s=>elements[s],querySelectorAll:()=>[],addEventListener(){}},localStorage:{getItem:()=>null,setItem(){}},crypto:require('crypto').webcrypto,console,Date,assert});
-for(const file of ['comments.js','schedule-data.js','sessions.js','evaluations.js','reports.js','career-report.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+file,'utf8'),context);
+for(const file of ['comments.js','schedule-data.js','sessions.js','evaluations.js','reports.js','career-report.js','marketing.js','app.js'])vm.runInContext(fs.readFileSync(__dirname+'/'+file,'utf8'),context);
 const check=code=>vm.runInContext(code,context);
 check(`assert.equal(schedule().teams.flat().length,13);assert.equal(schedule().sessions.filter(s=>!s.deferred).length,5);assert.equal(assignment('individual'),0);assert(roleDeferred(0));assert(!roleDeferred(1));assert.equal(professional(),null);assert.equal(studentParticipation().length,3);assert.equal(Object.keys(state.values).length,0);`);
 check(`assert(addCheckin(0,'real@school.edu',true));assert.equal(state.checkins.length,0);assert.equal(addCheckin(0,'test@example.com',true),'');assert(addCheckin(0,'TEST@example.com',true));setSessionStatus(0,'Delayed');assert.equal(state.queue.length,0);setSessionStatus(0,'Completed');assert.equal(state.queue.length,1);setSessionStatus(0,'Completed');assert.equal(state.queue.length,1);assert(addCheckin(0,'late@example.com',true));setSessionStatus(0,'Canceled');assert.equal(state.queue.length,0);assert(addCheckin(5,'deferred@example.com',true));setSessionStatus(5,'Completed');assert.equal(sessionStatus(5),'Awaiting alternate opportunity');assert.equal(state.queue.length,0);`);
@@ -60,3 +60,4 @@ check(`delete careerRecord().portfolio;state.sessions[sessionKey(teachingIndex()
 
 elements['#course'].value='EXS215';elements['#student'].value='DemoA';
 check(`state.sessions[sessionKey(teachingIndex())]='Completed';shared.forEach((_,i)=>state.values[key('shared',i)]=3);individual.forEach((_,i)=>state.values[key('individual',i)]=3);assert(resumeBullets()[0].includes('resistance training'));assert(!resumeBullets()[0].includes('cardiorespiratory'));assert(careerReportView().includes('Experience for your résumé'));`);
+

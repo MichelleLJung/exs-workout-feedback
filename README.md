@@ -82,3 +82,9 @@ The worker claims each delivery atomically and does not automatically retry an a
 ## Protected email connection check
 
 After loading online instructor records, **Check email connection** verifies the configured SMTP account without sending a message. Only the verified instructor can use the same-origin endpoint. Passwords and provider error details are never returned. The sender display name is MCC Workout Feedback. Participant sending remains disabled until the separate launch gates and real-data workflow are deliberately enabled.
+
+
+
+## Marketing & Recruitment
+
+The instructor workspace records flyer creation, posting/distribution, and individually verified workout recruitment separately from Teaching and Professional Practice. Recruitment awards 1 point per attendee up to 4. Flyer responsibilities use completion statuses; no new combined grade is calculated. Team check-in counts never automatically award individual recruitment points. Existing records default to Not recorded, not zero. Records are scoped to the course, student, and teaching opportunity, saved through the protected version-checked records endpoint, and included in both report views. Marketing completion contributes labeled evidence of communication and professional follow-through in the Skills report. Existing assessment keys, scores, and snapshots are preserved. Run `npm run check` including the marketing save/reload and compatibility checks before deployment.
